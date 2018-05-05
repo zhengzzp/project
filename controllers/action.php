@@ -34,9 +34,23 @@ class Action extends User_Controller
 		$this->views(null, 'WdatePicker,jqueryUI');
 	}
 	
-	public function list_collect()
+	public function lists_collect()
 	{
-	    exit;
+	    $this->lang->load('model/member_intergral');
+	    $this->load->library('pagination');
+	    $this->load->model('business/service/member/member_integral_imodel');
+	    $uri_query = $this->input->input->get('keyword,source_type,stime,etime',true,true);
+	    $config = array();
+	    $config['total_rows'] = $this->member_integral_imodel->list('count',$uri_query);
+	    $config['per_page'] = 30;
+	    $config['uri_segment'] = 6;
+	    $config['base_url'] = 'service/member/integral/action/lists_collect';
+	    $this->pagination->initialize($config);
+	    $this->data->links = $this->pagination->create_links();
+	    $this->data->lists = $this->member_integral_imodel->lists($this->pagination->create_limit(),$uri_query);
+	    $this->data->uri_query = $uri_query;
+	    $this->data->source_type_array = $this->lang->line('member_integral_source_type');
+	    $this->views(null,'jqueryUI');
 	}
 
 	public function ajax_license_city_json()
@@ -44,31 +58,6 @@ class Action extends User_Controller
 		$this->load->model('dao/city/city_model');
 		$ret = $this->city_model->list_name($this->input->post('id', true));
 		echo json_encode($ret);
-	}
-
-	public function lists_collect_detail()
-	{
-		$this->load->library('pagination');
-		$this->load->model('business/service/member/member_integral_imodel');
-		$uri_query = $this->input->get('member_id,stime,etime,source_type', true, true);
-		if (! $uri_query['stime']) {
-			$uri_query['stime'] = '';
-		}
-		if (! $uri_query['etime']) {
-			$uri_query['etime'] = '';
-		}
-		$config = array();
-		$config['per_page'] = 25;
-		$config['uri_segment'] = 6;
-		$config['base_url'] = 'service/member/integral/action/lists_collect_detail';
-		$config['total_rows'] = $this->member_integral_imodel->lists_collect_detail('count', $uri_query);
-		$this->pagination->initialize($config);
-		$this->data->links = $this->pagination->create_links();
-		$this->data->lists = $this->member_integral_imodel->lists_collect_detail($this->pagination->create_limit(), $uri_query);
-		$this->data->total_all = $this->member_integral_imodel->lists_collect_detail('total_all', $uri_query);
-		$this->data->total = $this->member_integral_imodel->get_total();
-		$this->data->uri_query = $uri_query;
-		$this->views(null, 'WdatePicker');
 	}
 
 		/*
