@@ -50,6 +50,7 @@ class Action extends User_Controller
 	    $this->data->lists = $this->member_integral_imodel->lists($this->pagination->create_limit(),$uri_query);
 	    $this->data->uri_query = $uri_query;
 	    $this->data->source_type_array = $this->lang->line('member_integral_source_type');
+        $this->data->actions .= "<div class='rowAdd'><a href=" . site_url('/service/member/integral/action/ajax_export_excel') ." class='Btn exportBtn'>导出CSV</a></div>";
 	    $this->views(null,'jqueryUI');
 	}
 

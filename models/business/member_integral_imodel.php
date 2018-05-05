@@ -8,6 +8,43 @@ class Member_integral_imodel extends MY_Model
 		parent::__construct();
 		$this->lang->load('model/member_integral');
 	}
+	
+	public function list_collect($limit,$config = array())
+	{
+	    $default = array(
+	        'keyword' = '',
+	        'source_type' = '',
+	        'stime' = '',
+	        'etime' = '')
+	    $data = extend($default,$config);
+	    $this->db->select('sum(ed_member_integral.integral) as integral_str,member.card_id,member.fullname,member.mobile_phone,store.name');
+	    $this->db->join('member','member_integral.member_id = member.id','left');
+	    $this->db->join('store','member.store_id = store.id','left');
+	    $this->db->group_by('member_integral.member_id')
+	    if ($this->keyword) {
+	        $this->db->where('ed_member_card_id like "%'. $keyword .'%" and ed_member.fullname like "%' . $keyword . '%" and ed_member.mobile_phone like "%' . $keyword .'%" and ed_store.name like "%' . $keyword .'%"');
+	    }
+	    if ($this->source_type) {
+	        $keyword = trim($this->source_type);
+	        $this->db->where("(ed_member_integral.remark like '%" . $keyword . "%')");
+	    }
+	    if ($this->stime) {
+	        $this->db->where('ed_member_integral.ctime >=',strtotime($this->stime . '00:00:00'));
+	    }
+	    if ($this->etime) {
+	        $this->db->where('ed_member_intergral.ctime <=',strtotime($this->etime . '23:59:59'));
+	    }
+	    if ($limit = 'count') {
+	        return $this->db->count_all_results($this->table);
+	    }
+	    $this->db->order_by('member_integral.member_id');
+	    $this->db->limit($limit);
+	    $query = $this->db->get($this->table);
+	    while($row = $query->_fetch_object()){
+	        $ret[] = $this->translate($row,'action_lists_collect');
+	    }
+	    return $ret;
+	}
 
 	public function lists_collect_detail($limit, $config = array())
 	{
@@ -64,8 +101,6 @@ class Member_integral_imodel extends MY_Model
 		$val = (int)$val;
 		$this->member_id = $val;
 	}
-
-
 
 	protected function set_store_list()
 	{
