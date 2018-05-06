@@ -12,17 +12,20 @@ class Member_integral_imodel extends MY_Model
 	public function list_collect($limit,$config = array())
 	{
 	    $default = array(
-	        'keyword' = '',
-	        'source_type' = '',
-	        'stime' = '',
-	        'etime' = '')
-	    $data = extend($default,$config);
-	    $this->db->select('sum(ed_member_integral.integral) as integral_str,member.card_id,member.fullname,member.mobile_phone,store.name');
+	        'keyword' => '',
+	        'source_type' => '',
+	        'stime' => '',
+	        'etime' => '');
+	    $data = $this->extend($default,$config);
+	    $this->db->select('sum(ed_member_integral.integral) as integral,member_integral.member_id,member.card_id,member.fullname,member.mobile_phone,store.name as store_name,store_daogou.name as store_name_daogou');
 	    $this->db->join('member','member_integral.member_id = member.id','left');
 	    $this->db->join('store','member.store_id = store.id','left');
-	    $this->db->group_by('member_integral.member_id')
+	    $this->db->join('store as store_daogou','member.service_id = store_daogou.id','left');
+	    $this->db->where('ed_member_integral.member_id !=','0');
+	    $this->db->group_by('member_integral.member_id');
+	    $this->db->order_by('member_integral.member_id');
 	    if ($this->keyword) {
-	        $this->db->where('ed_member_card_id like "%'. $keyword .'%" and ed_member.fullname like "%' . $keyword . '%" and ed_member.mobile_phone like "%' . $keyword .'%" and ed_store.name like "%' . $keyword .'%"');
+	        $this->db->where('ed_member_card_id like "%'. $this->keyword .'%" and ed_member.fullname like "%' . $this->keyword . '%" and ed_member.mobile_phone like "%' . $this->keyword .'%" and ed_store.name like "%' . $this->keyword .'%"');
 	    }
 	    if ($this->source_type) {
 	        $keyword = trim($this->source_type);
@@ -34,15 +37,24 @@ class Member_integral_imodel extends MY_Model
 	    if ($this->etime) {
 	        $this->db->where('ed_member_intergral.ctime <=',strtotime($this->etime . '23:59:59'));
 	    }
-	    if ($limit = 'count') {
-	        return $this->db->count_all_results($this->table);
+	    if ($limit == 'count') {
+	        return $this->db->get($this->table)->num_rows;
 	    }
-	    $this->db->order_by('member_integral.member_id');
-	    $this->db->limit($limit);
+	    if ($limit !== 'total_all') {
+	        $this->db->limit($limit);
+	    }
 	    $query = $this->db->get($this->table);
+	    $total = new stdClass();
+	    $total->integral = 0;
 	    while($row = $query->_fetch_object()){
-	        $ret[] = $this->translate($row,'action_lists_collect');
+	        $total->integral += $row->integral;
+	        $ret[] = $this->translate($row,'action_lists_collect,store_name,store_name_daogou,integral');
 	    }
+	    $this->translate($total,'integral');
+	    if ($limit == 'total_all') {
+	        return $total;
+	    }
+	    $this->data->total = $total;
 	    return $ret;
 	}
 
