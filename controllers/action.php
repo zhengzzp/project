@@ -53,7 +53,7 @@ class Action extends User_Controller
 	    $this->data->source_type_array = $this->lang->line('member_integral_source_type');
 	    $this->data->actions = '';
 	    if ($this->acl->allow_access('service/member/integral/action/ajax_export_excel')) {
-			$this->data->actions .= '<input type="button" name="button" value="导出CSV" class="Btn exportBtn ajax_export_excel" data-url="' . site_url('service/daogou/payment/action/ajax_export_excel') . '?' . http_build_query($uri_query) . '" style="margin-left:10px;" />';
+			$this->data->actions .= '<input type="button" name="button" value="导出CSV" class="Btn exportBtn ajax_export_excel" data-url="' . site_url('/service/member/integral/action/ajax_export_excel') . '?' . http_build_query($uri_query) . '" style="margin-left:10px;" />';
 	    }
 	    $this->views(null,'jqueryUI,WdatePicker');
 	}
@@ -85,6 +85,36 @@ class Action extends User_Controller
 		echo json_encode($ret);
 	}
 
+	public function ajax_export_excel()
+	{
+	    ini_set("memory_limit", "-1");
+	    set_time_limit(0);
+	    header('Content_Type:application/vnd.ms-excel;charset=gbk');
+	    header('Content-Disposition:attachment;filename="会员积分.csv"');
+	    header('Cache-Control:max-age=0');
+	    $this->load->model('business/service/member/member_integral_imodel');
+	    $uri_query = $this->input->get('keyword,source_type,stime,etime',true,true);
+	    $data_list = $this->member_integral_imodel->export_excel($uri_query);
+	    $fp = fopen('php://output','a');
+	    $head = array('会员ID','会员姓名','会员卡号','会员电话','所属门店','省份','城市','积分');
+	    foreach($head as $key => $val) {
+	        $head[$key] = iconv('utf-8', 'gbk', $val);
+	    }
+	    fputcsv($fp,$head);
+	    $cnt = 0;
+	    $limit = 100000;
+	    foreach($data_list as $row) {
+	        $cnt ++;
+	        if ($limit == $cnt) {
+	            ob_flush();
+	            flush();
+	            $cnt = 0;
+	        }
+	        foreach($row as $key => $val) {
+	            $row[$key] = iconv('utf-8','gbk',$val);
+	        }
+	        fputcsv($fp,$row);
+	    }
 		/*
 		$this->load->library('excelhelper');
 		$excel = new excelHelper();
@@ -99,4 +129,5 @@ class Action extends User_Controller
 				'积分');
 		$excel->exportData($headerarr, $data, 'member_integral_' . date('Y-m-d'));
 		*/
+	}
 }

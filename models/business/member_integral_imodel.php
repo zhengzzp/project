@@ -9,7 +9,7 @@ class Member_integral_imodel extends MY_Model
 		$this->lang->load('model/member_integral');
 	}
 	
-	public function list_collect($limit,$config = array())
+	public function lists_collect($limit,$config = array())
 	{
 	    $default = array(
 	        'keyword' => '',
@@ -106,6 +106,49 @@ class Member_integral_imodel extends MY_Model
 		$this->set_total($total);
 		$this->translate($total, 'integral');
 		return $ret;
+	}
+	
+	public function export_excel($config)
+	{
+	    $default = array(
+	        'keyword' => '',
+	        'source_type' => '',
+	        'stime' => '',
+	        'etime' =>'');
+	    $this->extend($default,$config);
+	    $this->db->select('member.id,member.fullname,member.card_id,member.mobile_phone,store.name as store_name,member.province,member.city,sum(ed_member_integral.integral) as integral');
+	    $this->db->join('member','member.id = member_integral.member_id','left');
+	    $this->db->join('store','store.id = member.store_id');
+	    $this->db->group_by('member_integral.member_id');
+	    $this->db->order_by('member_integral.member_id');
+	    if ($this->keyword) {
+	        $this->db->where('ed_member_card_id like "%'. $this->keyword .'%" and ed_member.fullname like "%' . $this->keyword . '%" and ed_member.mobile_phone like "%' . $this->keyword .'%" and ed_store.name like "%' . $this->keyword .'%"');
+	    }
+	    if ($this->source_type) {
+	        $keyword = trim($this->source_type);
+	        $this->db->where("(ed_member_integral.remark like '%" . $keyword . "%')");
+	    }
+	    if ($this->stime) {
+	        $this->db->where('ed_member_integral.ctime >=',strtotime($this->stime . '00:00:00'));
+	    }
+	    if ($this->etime) {
+	        $this->db->where('ed_member_intergral.ctime <=',strtotime($this->etime . '23:59:59'));
+	    }
+	    $query = $this->db->get($this->table);
+	    $ret = array();
+	    while($row = $query->_fetch_object()) {
+	        $data = array();
+	        $data[] = $row->id;
+	        $data[] = $row->fullname;
+	        $data[] = $row->card_id;
+	        $data[] = $row->mobile_phone;
+	        $data[] = $row->store_name;
+	        $data[] = $row->province;
+	        $data[] = $row->city;
+	        $data[] = $row->integral;
+	        $ret[] = $data;
+	    }
+	    return $ret;
 	}
 
 	protected function set_member_id($val)
